@@ -49,23 +49,28 @@ function App() {
   useEffect(() => {
     const resizeStickyNote = () => {
       if (titleInputRef.current && tasks.length > 0) {
+        // Reset height to auto to get the true scrollHeight
+        titleInputRef.current.style.height = 'auto';
         const titleHeight = titleInputRef.current.scrollHeight;
         const titleWidth = titleInputRef.current.scrollWidth;
+        
+        // Set the textarea height to match its content
+        titleInputRef.current.style.height = `${titleHeight}px`;
         
         // Base dimensions
         const baseWidth = 500;
         const baseHeight = 500;
-        const headerPadding = 120; // Account for header padding and border
+        const headerPadding = 140; // Account for header padding and border
         const notesSection = 300; // Minimum space for notes
         const sidePadding = 80; // Account for left/right padding
         
-        // Calculate new dimensions
-        const newHeight = Math.max(baseHeight, headerPadding + titleHeight + notesSection);
+        // Calculate new dimensions with extra buffer for text
+        const newHeight = Math.max(baseHeight, headerPadding + titleHeight + notesSection + 20);
         const newWidth = Math.max(baseWidth, titleWidth + sidePadding);
         
         // Cap dimensions
         const maxWidth = 700;
-        const maxHeight = 800;
+        const maxHeight = 900; // Increased max height for longer titles
         
         setStickyNoteSize({
           width: Math.min(newWidth, maxWidth),
