@@ -25,6 +25,8 @@ function App() {
   const [newTask, setNewTask] = useState('');
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [stickyNoteSize, setStickyNoteSize] = useState({ width: 500, height: 500 });
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isSlidingIn, setIsSlidingIn] = useState(false);
   const stackListRef = useRef(null);
   const titleInputRef = useRef(null);
 
@@ -134,19 +136,52 @@ function App() {
     if (newTask.trim() === '') return;
     setTasks([{ title: newTask.trim(), notes: '' }, ...tasks]);
     setNewTask('');
+    
+    // Trigger slide-in animation for the new current task
+    setIsSlidingIn(true);
+    setTimeout(() => {
+      setIsSlidingIn(false);
+    }, 600); // Match the new CSS animation duration
   };
 
-  // Mark task as done (remove from stack and add to completed)
+  // Mark task as done with animation
   const handleMarkDone = (index) => {
-    const completedTask = {
-      ...tasks[index],
-      completedAt: new Date().toISOString()
-    };
-    setCompletedTasks([completedTask, ...completedTasks]);
-    
-    const updatedTasks = [...tasks];
-    updatedTasks.splice(index, 1);
-    setTasks(updatedTasks);
+    if (index === 0) {
+      // Animate completion for current task
+      setIsCompleting(true);
+      setTimeout(() => {
+        const completedTask = {
+          ...tasks[index],
+          completedAt: new Date().toISOString()
+        };
+        setCompletedTasks([completedTask, ...completedTasks]);
+        
+        const updatedTasks = [...tasks];
+        updatedTasks.splice(index, 1);
+        setTasks(updatedTasks);
+        
+        setIsCompleting(false);
+        
+        // Trigger slide-in animation for new current task if there is one
+        if (updatedTasks.length > 0) {
+          setIsSlidingIn(true);
+          setTimeout(() => {
+            setIsSlidingIn(false);
+          }, 600); // Match the new CSS animation duration
+        }
+      }, 800); // Match the new CSS animation duration
+    } else {
+      // Regular completion for stack tasks
+      const completedTask = {
+        ...tasks[index],
+        completedAt: new Date().toISOString()
+      };
+      setCompletedTasks([completedTask, ...completedTasks]);
+      
+      const updatedTasks = [...tasks];
+      updatedTasks.splice(index, 1);
+      setTasks(updatedTasks);
+    }
   };
 
   // Update current task title
@@ -215,8 +250,8 @@ function App() {
         <h2>Current Task</h2>
         {tasks.length > 0 ? (
           <div 
-            className="current-task-note"
-            style={{ 
+            className={`current-task-note${isCompleting ? ' completing' : ''}${isSlidingIn ? ' sliding-in' : ''}`}
+            style={{
               width: `${stickyNoteSize.width}px`,
               height: `${stickyNoteSize.height}px`
             }}
@@ -226,18 +261,17 @@ function App() {
                 ref={titleInputRef}
                 value={tasks[0].title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="task-title-input"
                 placeholder="Task title..."
-                rows={1}
+                className="task-title-input"
+                style={{ height: 'auto' }}
               />
             </div>
             <div className="task-notes">
               <textarea
                 value={tasks[0].notes}
                 onChange={(e) => handleNotesChange(e.target.value)}
-                className="task-notes-input"
                 placeholder="Add notes..."
-                rows={8}
+                className="task-notes-input"
               />
             </div>
             <button
