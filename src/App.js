@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 const STORAGE_KEY = 'paperstack_tasks';
+const COMPLETED_STORAGE_KEY = 'paperstack_completed_tasks';
 const initialTasks = [
   { title: 'Finish React project', notes: 'Complete the Paper Stack app' },
   { title: 'Buy groceries', notes: 'Milk, bread, eggs' },
@@ -16,6 +17,10 @@ function App() {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : initialTasks;
   });
+  const [completedTasks, setCompletedTasks] = useState(() => {
+    const stored = localStorage.getItem(COMPLETED_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  });
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [newTask, setNewTask] = useState('');
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -27,6 +32,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
+
+  // Save completed tasks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(completedTasks));
+  }, [completedTasks]);
 
   // Check if stack list is overflowing
   useEffect(() => {
@@ -86,6 +96,20 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [tasks]);
 
+  // Calculate statistics
+  const getStatistics = () => {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const completedToday = completedTasks.filter(task => 
+      new Date(task.completedAt) >= oneDayAgo
+    ).length;
+    
+    const completedAllTime = completedTasks.length;
+    
+    return { completedToday, completedAllTime };
+  };
+
   // Drag and drop handlers
   const handleDragStart = (index) => {
     setDraggedIndex(index);
@@ -112,8 +136,14 @@ function App() {
     setNewTask('');
   };
 
-  // Mark task as done (remove from stack)
+  // Mark task as done (remove from stack and add to completed)
   const handleMarkDone = (index) => {
+    const completedTask = {
+      ...tasks[index],
+      completedAt: new Date().toISOString()
+    };
+    setCompletedTasks([completedTask, ...completedTasks]);
+    
     const updatedTasks = [...tasks];
     updatedTasks.splice(index, 1);
     setTasks(updatedTasks);
@@ -136,6 +166,8 @@ function App() {
       setTasks(updatedTasks);
     }
   };
+
+  const stats = getStatistics();
 
   return (
     <div className="App layout">
@@ -218,6 +250,23 @@ function App() {
           <div className="no-task">No tasks in the stack!</div>
         )}
       </main>
+      <aside className="stats-column">
+        <h2>Statistics</h2>
+        <div className="stats-container">
+          <div className="stat-card">
+            <h3>Completed Today</h3>
+            <div className="stat-number">{stats.completedToday}</div>
+          </div>
+          <div className="stat-card">
+            <h3>Completed All Time</h3>
+            <div className="stat-number">{stats.completedAllTime}</div>
+          </div>
+          <div className="stat-card">
+            <h3>Current Stack</h3>
+            <div className="stat-number">{tasks.length}</div>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
